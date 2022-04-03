@@ -33,16 +33,19 @@ def selfExtract2Rar(selfExtractFile):
                     realExt = ext[0]
                     getHead = True
                     break
-            if not data or getHead:
+            if (not data) or getHead:
                 break
             else:
                 seekTarget += 16
+                if seekTarget > 400000:
+                    break
     if getHead:
         originalFileSize = os.path.getsize(selfExtractFile) - seekTarget
         normalFile = os.path.splitext(selfExtractFile)[0] + '.' + realExt
         i = 1
         while os.path.exists(normalFile):
             normalFile = os.path.splitext(selfExtractFile)[0] + str(i) + '.' + realExt
+            i += 1
         print('Output as: ' + normalFile)
         startTime = time.time()
         with open(normalFile, 'wb') as fb:
@@ -76,3 +79,4 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         for file in sys.argv[1:]:
             selfExtract2Rar(file)
+        # os.system('pause')
