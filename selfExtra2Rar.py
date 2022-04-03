@@ -8,8 +8,10 @@ import os
 import time
 import sys
 
-READ_SIZE = int(1024 * 1024 * 16)  # 16MB
 
+WRITE_TO_NEW_FILE = False  # 为真时，新建一个压缩文件。为假时，把原来的文件修改为正确的后缀，并把程序的部分全部置零。
+
+READ_SIZE = int(1024 * 1024 * 16)  # 16MB
 FILE_EXT = \
     [['rar', b'Rar!'],
      ['zip', b'PK'],
@@ -40,37 +42,45 @@ def selfExtract2Rar(selfExtractFile):
                 if seekTarget > 400000:
                     break
     if getHead:
-        originalFileSize = os.path.getsize(selfExtractFile) - seekTarget
         normalFile = os.path.splitext(selfExtractFile)[0] + '.' + realExt
         i = 1
         while os.path.exists(normalFile):
             normalFile = os.path.splitext(selfExtractFile)[0] + str(i) + '.' + realExt
             i += 1
-        print('Output as: ' + normalFile)
-        startTime = time.time()
-        with open(normalFile, 'wb') as fb:
-            if READ_SIZE:
-                with open(selfExtractFile, 'rb') as f:
-                    f.seek(seekTarget)
-                    readI = 0
-                    while True:
-                        data = f.read(READ_SIZE)
-                        if data:
-                            readI += 1
-                            fb.write(data)
-                            i = int(readI * READ_SIZE / originalFileSize * 100)
-                            print("\r", end="")
-                            print("Progress: {}%: ".format(i), "▋" * (i // 2), end="")
-                            sys.stdout.flush()
-                        else:
-                            break
-            else:
-                with open(selfExtractFile, 'rb') as f:
-                    f.seek(seekTarget)
-                    fb.write(f.read())
-        endTime = time.time()
-        allTime = round(endTime - startTime, 3)
-        print('\nCost: ' + str(allTime) + 's')
+        if WRITE_TO_NEW_FILE:
+            originalFileSize = os.path.getsize(selfExtractFile) - seekTarget
+            print('Output as: ' + normalFile)
+            startTime = time.time()
+            with open(normalFile, 'wb') as fb:
+                if READ_SIZE:
+                    with open(selfExtractFile, 'rb') as f:
+                        f.seek(seekTarget)
+                        readI = 0
+                        while True:
+                            data = f.read(READ_SIZE)
+                            if data:
+                                readI += 1
+                                fb.write(data)
+                                i = int(readI * READ_SIZE / originalFileSize * 100)
+                                print("\r", end="")
+                                print("Progress: {}%: ".format(i), "▋" * (i // 2), end="")
+                                sys.stdout.flush()
+                            else:
+                                break
+                else:
+                    with open(selfExtractFile, 'rb') as f:
+                        f.seek(seekTarget)
+                        fb.write(f.read())
+            endTime = time.time()
+            allTime = round(endTime - startTime, 3)
+            print('\nCost: ' + str(allTime) + 's')
+        else:
+            if seekTarget > 0:
+                with open(selfExtractFile, 'rb+') as f:
+                    while seekTarget > 0:
+                        f.write(b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+                        seekTarget -= 16
+            os.rename(selfExtractFile, normalFile)
     else:
         print('Cannot get extension of ' + selfExtractFile)
 
